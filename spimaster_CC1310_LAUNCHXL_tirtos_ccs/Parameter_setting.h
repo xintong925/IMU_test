@@ -33,10 +33,10 @@ extern "C" {
 #define CTRL2_G_VALUE            0x0038 //ODR_G = 52 Hz, FS_G = ±1000 dps
 #define WAKE_UP_DUR              0x0068 //last 4 bits: duration for inactivity detection - LSB*512/ODR_XL
 #define WAKE_UP_THS              0x0002 // Threshold for wakeup (last 5 bits)
-#define TAP_CFG0_VALUE           0x0000 // Select sleep-change notification
+#define TAP_CFG0_VALUE           0x0020 // Select sleep-change notification
 #define TAP_CFG2_VALUE           0x00E0 // Enable interrupt; set XL ODR to 12.5 Hz in LP, gyro to power down
 #define MD1_CFG_VALUE            0x0080 // Routing activity/inactivity event on INT1 enabled
-
+#define INT1_CTRL_VALUE          0x0000
 
 /* XL and G Value */
 const float XL_SCALE_RANGE_2_G = 0.061;
@@ -52,6 +52,9 @@ const float G_SCALE_RANGE_2000_DPS = 70.0;
 uint8_t test_buffer_SPI[2] = {0x00, 0x01};
 uint8_t test_buffer[2] = {0x09, 0x25};
 uint8_t test_buffer_configure[2] = {0x00, 0x11};
+
+uint8_t GPIO_INT_ACTIVE = 0x00;
+
 
 
 

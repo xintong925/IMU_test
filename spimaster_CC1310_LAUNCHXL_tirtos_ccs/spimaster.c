@@ -117,7 +117,7 @@ static float angular_mdps[3];
 
 
 
-uint8_t activity_detection = 1;
+uint8_t activity_detection = 0;
 
 
 
@@ -418,7 +418,7 @@ uint8_t* Acceleration_raw_get(void *handle) {
         accel_g[1] = ((float_t)raw_accel[1]) * XL_SCALE_RANGE_2_G/1000;
         accel_g[2] = ((float_t)raw_accel[2]) * XL_SCALE_RANGE_2_G/1000;
 
-    //    printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
+   //     printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
 
 
    }
@@ -506,6 +506,8 @@ int Activity_Detection(void *handle) {
     ret = platform_read(handle, LSM6DSOX_WAKE_UP_SRC, &dummy_act, 1);
 
     bool check_activity = ((ret&ACTIVITY_BIT) == ACTIVITY_BIT); // if true, there's change in activity status
+  //  printf("pin value is: %d\n", activity_detection);
+  //  printf("GPIO 12 is: 0x%02X\n", GPIO_read(12));
 
     if(check_activity) {
     //    printf("zzzzzzzzzZZZZZZZZZZZZZZZZZ\n");
@@ -557,12 +559,13 @@ int init_SPI_IMU(void) {
  //   GPIO_setCallback(Board_DIO12, activityDetectionFxn);
  //   GPIO_enableInt(Board_DIO12);  /* INT1 */
 
-    GPIO_setConfig(Board_DIO12, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
-    GPIO_setCallback(Board_DIO12, activityDetectionFxn);
-    GPIO_enableInt(Board_DIO12);  /* INT1 */
+    GPIO_setConfig(12, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
+    GPIO_setCallback(12, activityDetectionFxn);
+    GPIO_enableInt(12);
+      /* INT1 */
 
-    GPIO_setConfig(Board_DIO15, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_RISING);
-    GPIO_enableInt(Board_DIO15);  /* INT2 */
+  //  GPIO_setConfig(Board_DIO15, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_RISING);
+  //  GPIO_enableInt(Board_DIO15);  /* INT2 */
 
     return 0;
 
@@ -587,6 +590,8 @@ int SPI_write_data(void) {
                                                                                                 // Inacitvity configuration: accelerometer to 12.5 Hz (LP mode)
                                                                                                 // Gyroscope to Power-Down mode
     int32_t INT1_Routing = platform_write(masterSpi, LSM6DSOX_MD1_CFG, MD1_CFG_VALUE, 1);       // Activity/Inactivity interrupt driven to INT1 pin
+
+    int32_t INT_dataReadt = platform_write(masterSpi, LSM6DSOX_INT1_CTRL, INT1_CTRL_VALUE, 1);
 
     printf("SPI initialized successfully and IMU has been waken up\n");
     send_databuffer(test_buffer_configure,sizeof(test_buffer_configure));
@@ -672,7 +677,7 @@ int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read){
 
 void activityDetectionFxn(uint_least8_t index)
 {
-    activity_detection = 0;
+    activity_detection = 1;
 
 }
 
@@ -749,14 +754,14 @@ void *masterThread(void *arg0)
 
     while (1) { // add PinInterrupt - minimize the number of communications
 
-        int check_status = Activity_Detection(masterSpi); //
+     //   int check_status = Activity_Detection(masterSpi); //
       //  int32_t rx_WakeUp = platform_read(masterSpi, LSM6DSOX_CTRL1_XL, &dummy_read_G, 1);
      //   uint32_t pin_out_value = PIN_getOutputValue(PIN_Id Board_DIO12);
     //    printf("value of activity detection flag is: %d\n", activity_detection);
      //   printf("value of interrupt pin 1 is 0x%04X\n", PIN_getOutputValue(12));
 
-        if(check_status == 1){
-
+      //  if(check_status == 1){
+        if(GPIO_read(12)==GPIO_INT_ACTIVE){
             int check_G_aval = Data_update_check(masterSpi, G_BIT); //
         //    printf("value of activity detection flag is: %d\n", activity_detection);
 
