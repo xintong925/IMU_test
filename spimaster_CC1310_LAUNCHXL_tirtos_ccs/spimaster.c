@@ -84,10 +84,10 @@ int SPI_write_data(void);
 int32_t platform_read(void *handle, uint16_t reg, uint8_t *bufp, uint16_t len);
 int32_t platform_write(void *handle, uint16_t reg, uint16_t data, uint16_t len);
 
-int Data_update_check(void *handle, uint16_t reg, uint16_t check_type);
+int Data_update_check(void *handle, uint16_t check_type);
 
-uint8_t* Acceleration_raw_get(void *handle, uint16_t reg, uint16_t len);
-uint8_t* Angular_Rate_raw_get(void *handle, uint16_t reg, uint16_t len);
+uint8_t* Acceleration_raw_get(void *handle);
+uint8_t* Angular_Rate_raw_get(void *handle);
 
 
 int Activity_Detection(void *handle);
@@ -345,12 +345,12 @@ int32_t platform_write(void *handle, uint16_t reg, uint16_t data, uint16_t len)
  * @return  1-new data; 0-no new data
  */
 //e.g. Data_update_check(masterSpi, LSM6DSOX_STATUS_REG, XL_BIT);
-int Data_update_check(void *handle, uint16_t reg, uint16_t check_type){ //check_type: XL_BIT or G_BIT
+int Data_update_check(void *handle, uint16_t check_type){ //check_type: XL_BIT or G_BIT
 
     uint8_t dummy_buf;
     int16_t status_reg;
 
-    status_reg = platform_read(handle, reg, &dummy_buf, 1);
+    status_reg = platform_read(handle, LSM6DSOX_STATUS_REG, &dummy_buf, 1);
     bool check_aval = ((status_reg & check_type) == check_type); // if true, the data is updated
 
     return check_aval;
@@ -368,7 +368,7 @@ int Data_update_check(void *handle, uint16_t reg, uint16_t check_type){ //check_
   * @return Array of 6 8-bit hex number (x, y, z axis low and high value)
   */
 //e.g. Acceleration_raw_get(masterSpi, LSM6DSOX_STATUS_REG, 1)
-uint8_t* Acceleration_raw_get(void *handle, uint16_t reg, uint16_t len) {
+uint8_t* Acceleration_raw_get(void *handle) {
 
     uint16_t data_XL;
     uint16_t data_XH;
@@ -381,7 +381,7 @@ uint8_t* Acceleration_raw_get(void *handle, uint16_t reg, uint16_t len) {
     uint8_t XL_buff_Y[2];
     uint8_t XL_buff_Z[2];
 
-    int check_XL_aval = Data_update_check(handle, reg, XL_BIT);
+    int check_XL_aval = Data_update_check(handle, XL_BIT);
 
 
     if(check_XL_aval) {
@@ -436,7 +436,7 @@ uint8_t* Acceleration_raw_get(void *handle, uint16_t reg, uint16_t len) {
   * @return Array of 6 8-bit hex number (x, y, z axis low and high value)
   */
 //e.g. Angular_raw_get(masterSpi, LSM6DSOX_STATUS_REG, 1)
-uint8_t* Angular_Rate_raw_get(void *handle, uint16_t reg, uint16_t len) {
+uint8_t* Angular_Rate_raw_get(void *handle) {
 
 
     uint16_t data_XL;
@@ -448,7 +448,7 @@ uint8_t* Angular_Rate_raw_get(void *handle, uint16_t reg, uint16_t len) {
 
     uint8_t G_buff[6];
 
-    int check_G_aval = Data_update_check(handle, reg, G_BIT);
+    int check_G_aval = Data_update_check(handle, G_BIT);
 
     if(check_G_aval) {
 
@@ -749,7 +749,7 @@ void *masterThread(void *arg0)
 
     while (1) { // add PinInterrupt - minimize the number of communications
 
-        int check_status = Activity_Detection(masterSpi); //only keep masterSpi
+        int check_status = Activity_Detection(masterSpi); //
       //  int32_t rx_WakeUp = platform_read(masterSpi, LSM6DSOX_CTRL1_XL, &dummy_read_G, 1);
      //   uint32_t pin_out_value = PIN_getOutputValue(PIN_Id Board_DIO12);
     //    printf("value of activity detection flag is: %d\n", activity_detection);
@@ -757,14 +757,14 @@ void *masterThread(void *arg0)
 
         if(check_status == 1){
 
-            int check_G_aval = Data_update_check(masterSpi, LSM6DSOX_STATUS_REG, G_BIT); //only keep masterSpi
+            int check_G_aval = Data_update_check(masterSpi, G_BIT); //
         //    printf("value of activity detection flag is: %d\n", activity_detection);
 
             if(check_G_aval){
           //      printf("value of activity detection flag is: %d\n", activity_detection);
 
-                uint8_t* XL_data = Acceleration_raw_get(masterSpi, LSM6DSOX_STATUS_REG, 1);
-                uint8_t* G_data = Angular_Rate_raw_get(masterSpi, LSM6DSOX_STATUS_REG, 1);
+                uint8_t* XL_data = Acceleration_raw_get(masterSpi);
+                uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
                 RF_transmission(XL_data, G_data);
             }
 
