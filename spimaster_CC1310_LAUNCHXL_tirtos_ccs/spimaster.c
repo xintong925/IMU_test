@@ -115,6 +115,8 @@ static int8_t angular_8bit[6];
 static float accel_g[3];
 static float angular_mdps[3];
 
+
+
 uint8_t activity_detection = 1;
 
 
@@ -478,7 +480,7 @@ uint8_t* Angular_Rate_raw_get(void *handle, uint16_t reg, uint16_t len) {
         angular_mdps[1] = ((float_t)raw_angular[1]) * G_SCALE_RANGE_1000_DPS/1000;
         angular_mdps[2] = ((float_t)raw_angular[2]) * G_SCALE_RANGE_1000_DPS/1000;
 
-    //    printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
+   //     printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
 
    }
     return angular_8bit;
@@ -528,7 +530,7 @@ int init_SPI_IMU(void) {
 /* Initialize SPI parameters */
 
     SPI_Params_init(&spiParams);            //spiParams is a global (TODO change eventually)
-    spiParams.frameFormat = SPI_POL0_PHA0; // Mode 3
+    spiParams.frameFormat = SPI_POL0_PHA0; // Mode 1
     spiParams.bitRate = 1000000;
     //spiParams.mode = SPI_MASTER;
     spiParams.dataSize = 16;
@@ -544,6 +546,8 @@ int init_SPI_IMU(void) {
     }
     else {
         printf("Master SPI initialized\n");
+        send_databuffer(test_buffer_SPI,sizeof(test_buffer_SPI));
+
     }
 
 
@@ -585,6 +589,7 @@ int SPI_write_data(void) {
     int32_t INT1_Routing = platform_write(masterSpi, LSM6DSOX_MD1_CFG, MD1_CFG_VALUE, 1);       // Activity/Inactivity interrupt driven to INT1 pin
 
     printf("SPI initialized successfully and IMU has been waken up\n");
+    send_databuffer(test_buffer_configure,sizeof(test_buffer_configure));
 
     return 0;
 
@@ -724,10 +729,6 @@ void *masterThread(void *arg0)
     /* Request access to the radio */
     rfHandle = RF_open(&rfObject, &RF_prop, (RF_RadioSetup*)&RF_cmdPropRadioDivSetup, &rfParams); //global defined, call in other places
 
-    uint8_t test_buffer[2];
-    test_buffer[0] = 0x09;
-    test_buffer[1] = 0x25;
-
     send_databuffer(test_buffer,sizeof(test_buffer));
  //   send_databuffer(test_startup_buffer2,sizeof(test_startup_buffer2));//confirm Tx OK; send the data wirelessly; test_star..; size of the buffer as well
 
@@ -751,16 +752,16 @@ void *masterThread(void *arg0)
         int check_status = Activity_Detection(masterSpi); //only keep masterSpi
       //  int32_t rx_WakeUp = platform_read(masterSpi, LSM6DSOX_CTRL1_XL, &dummy_read_G, 1);
      //   uint32_t pin_out_value = PIN_getOutputValue(PIN_Id Board_DIO12);
-        printf("value of activity detection flag is: %d\n", activity_detection);
-        printf("value of interrupt pin 1 is 0x%04X\n", PIN_getOutputValue(12));
+    //    printf("value of activity detection flag is: %d\n", activity_detection);
+     //   printf("value of interrupt pin 1 is 0x%04X\n", PIN_getOutputValue(12));
 
         if(check_status == 1){
 
             int check_G_aval = Data_update_check(masterSpi, LSM6DSOX_STATUS_REG, G_BIT); //only keep masterSpi
-            printf("value of activity detection flag is: %d\n", activity_detection);
+        //    printf("value of activity detection flag is: %d\n", activity_detection);
 
             if(check_G_aval){
-                printf("value of activity detection flag is: %d\n", activity_detection);
+          //      printf("value of activity detection flag is: %d\n", activity_detection);
 
                 uint8_t* XL_data = Acceleration_raw_get(masterSpi, LSM6DSOX_STATUS_REG, 1);
                 uint8_t* G_data = Angular_Rate_raw_get(masterSpi, LSM6DSOX_STATUS_REG, 1);

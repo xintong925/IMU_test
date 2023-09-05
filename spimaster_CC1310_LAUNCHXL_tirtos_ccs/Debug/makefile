@@ -151,7 +151,7 @@ all: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@$(MAKE) --no-print-directory -Onone "spimaster_CC1310_LAUNCHXL_tirtos_ccs.out"
 
 dependents:
-	-cd C:/Users/tongx/Workspace_IMU/IMU_MCU/tirtos_builds_CC1310_LAUNCHXL_release_ccs/Debug && $(MAKE) clean all
+	-cd C:/Users/tongx/Workspace_IMU/IMU_MCU/tirtos_builds_CC1310_LAUNCHXL_release_ccs/Debug && $(MAKE) all
 
 # Tool invocations
 spimaster_CC1310_LAUNCHXL_tirtos_ccs.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) C:/Users/tongx/Workspace_IMU/IMU_MCU/tirtos_builds_CC1310_LAUNCHXL_release_ccs/Debug/tirtos_builds_CC1310_LAUNCHXL_release_ccs.lib
