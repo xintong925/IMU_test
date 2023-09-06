@@ -49,6 +49,9 @@ const float G_SCALE_RANGE_500_DPS = 17.5;
 const float G_SCALE_RANGE_1000_DPS = 35.0;
 const float G_SCALE_RANGE_2000_DPS = 70.0;
 
+uint8_t buffer_XL[6];
+uint8_t buffer_G[6];
+
 uint8_t test_buffer_SPI[2] = {0x00, 0x01};
 uint8_t test_buffer[2] = {0x09, 0x25};
 uint8_t test_buffer_configure[2] = {0x00, 0x11};

@@ -290,7 +290,7 @@ int32_t platform_read(void *handle, uint16_t reg, uint8_t *bufp) //potential pow
     }
 
     ret = *bufp; //return a known message so know what error it is
-  //  printf("Received: 0x%04X\n", ret); // for debugging: check if match smartrf
+ //   printf("Received: 0x%04X\n", ret); // for debugging: check if match smartrf
 
     return ret;
 }
@@ -377,21 +377,17 @@ uint8_t* Acceleration_raw_get(void *handle) {
     uint16_t data_ZL;
     uint16_t data_ZH;
 
-    uint8_t XL_buff_X[2];
-    uint8_t XL_buff_Y[2];
-    uint8_t XL_buff_Z[2];
-
     int check_XL_aval = Data_update_check(handle, XL_BIT);
 
 
     if(check_XL_aval) {
 
-        data_XL = platform_read(masterSpi, LSM6DSOX_OUTX_L_A, XL_buff_X);
-        data_XH = platform_read(masterSpi, LSM6DSOX_OUTX_H_A, XL_buff_X);
-        data_YL = platform_read(masterSpi, LSM6DSOX_OUTY_L_A, XL_buff_Y);
-        data_YH = platform_read(masterSpi, LSM6DSOX_OUTY_H_A, XL_buff_Y);
-        data_ZL = platform_read(masterSpi, LSM6DSOX_OUTZ_L_A, XL_buff_Z);
-        data_ZH = platform_read(masterSpi, LSM6DSOX_OUTZ_H_A, XL_buff_Z);
+        data_XL = platform_read(masterSpi, LSM6DSOX_OUTX_L_A, buffer_XL);
+        data_XH = platform_read(masterSpi, LSM6DSOX_OUTX_H_A, buffer_XL);
+        data_YL = platform_read(masterSpi, LSM6DSOX_OUTY_L_A, buffer_XL);
+        data_YH = platform_read(masterSpi, LSM6DSOX_OUTY_H_A, buffer_XL);
+        data_ZL = platform_read(masterSpi, LSM6DSOX_OUTZ_L_A, buffer_XL);
+        data_ZH = platform_read(masterSpi, LSM6DSOX_OUTZ_H_A, buffer_XL);
 
         accel_8bit[0] = (uint8_t)data_XH;
         accel_8bit[1] = (uint8_t)data_XL;
@@ -418,7 +414,7 @@ uint8_t* Acceleration_raw_get(void *handle) {
         accel_g[1] = ((float_t)raw_accel[1]) * XL_SCALE_RANGE_2_G/1000;
         accel_g[2] = ((float_t)raw_accel[2]) * XL_SCALE_RANGE_2_G/1000;
 
-        printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
+     //   printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
 
 
    }
@@ -446,18 +442,18 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
     uint16_t data_ZL;
     uint16_t data_ZH;
 
-    uint8_t G_buff[6];
+  //  uint8_t G_buff[6];
 
     int check_G_aval = Data_update_check(handle, G_BIT);
 
     if(check_G_aval) {
 
-        data_XL = platform_read(masterSpi, LSM6DSOX_OUTX_L_G, G_buff);
-        data_XH = platform_read(masterSpi, LSM6DSOX_OUTX_H_G, G_buff);
-        data_YL = platform_read(masterSpi, LSM6DSOX_OUTY_L_G, G_buff);
-        data_YH = platform_read(masterSpi, LSM6DSOX_OUTY_H_G, G_buff);
-        data_ZL = platform_read(masterSpi, LSM6DSOX_OUTZ_L_G, G_buff);
-        data_ZH = platform_read(masterSpi, LSM6DSOX_OUTZ_H_G, G_buff);
+        data_XL = platform_read(masterSpi, LSM6DSOX_OUTX_L_G, buffer_G);
+        data_XH = platform_read(masterSpi, LSM6DSOX_OUTX_H_G, buffer_G);
+        data_YL = platform_read(masterSpi, LSM6DSOX_OUTY_L_G, buffer_G);
+        data_YH = platform_read(masterSpi, LSM6DSOX_OUTY_H_G, buffer_G);
+        data_ZL = platform_read(masterSpi, LSM6DSOX_OUTZ_L_G, buffer_G);
+        data_ZH = platform_read(masterSpi, LSM6DSOX_OUTZ_H_G, buffer_G);
 
         angular_8bit[0] = (uint8_t)data_XH;
         angular_8bit[1] = (uint8_t)data_XL;
@@ -480,7 +476,7 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
         angular_mdps[1] = ((float_t)raw_angular[1]) * G_SCALE_RANGE_1000_DPS/1000;
         angular_mdps[2] = ((float_t)raw_angular[2]) * G_SCALE_RANGE_1000_DPS/1000;
 
-        printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
+     //   printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
 
    }
     return angular_8bit;
