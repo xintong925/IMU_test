@@ -530,7 +530,7 @@ GPIO_PinConfig gpioPinConfigs[] = {
     GPIOCC26XX_DIO_24 | GPIO_DO_NOT_CONFIG, /* SPI chip select */
     GPIOCC26XX_DIO_22 | GPIO_DO_NOT_CONFIG, /* LCD power control */
     GPIOCC26XX_DIO_23 | GPIO_DO_NOT_CONFIG, /*LCD enable */
-    IOID_12 | GPIO_DO_NOT_CONFIG, /*LCD enable */
+    CC1310_LAUNCHXL_DIO12 | GPIO_DO_NOT_CONFIG,
 
 
 };
