@@ -78,11 +78,11 @@
 void send_databuffer(const void* buffer,int buffer_size);
 
 int init_SPI_IMU(void);
-int SPI_write_data(void);
+int IMU_Configure(void);
 
 
-int32_t platform_read(void *handle, uint16_t reg, uint8_t *bufp, uint16_t len);
-int32_t platform_write(void *handle, uint16_t reg, uint16_t data, uint16_t len);
+int32_t platform_read(void *handle, uint16_t reg, uint8_t *bufp);
+int32_t platform_write(void *handle, uint16_t reg, uint16_t data);
 
 int Data_update_check(void *handle, uint16_t check_type);
 
@@ -263,14 +263,14 @@ void send_databuffer(const void* buffer, int buffer_size) // buffer: size of the
  * @return  Value of the register read from IMU
  */
 //e.g. platform_read(masterSpi, LSM6DSOX_WHOAMI, &dummy, 1);
-int32_t platform_read(void *handle, uint16_t reg, uint8_t *bufp, uint16_t len) //potential power saving: buffer
+int32_t platform_read(void *handle, uint16_t reg, uint8_t *bufp) //potential power saving: buffer
 {
     int32_t ret;
     reg |= READ_BIT;
 
     uint8_t* tx_Address = &reg; /*Address of the register to write to IMU */
 
-    transaction.count = len;
+    transaction.count = 1;
     transaction.txBuf = tx_Address;/*!< void * to a buffer with data to be transmitted */
     transaction.rxBuf = bufp;/*< void * to a buffer to receive data */
 
@@ -306,7 +306,7 @@ int32_t platform_read(void *handle, uint16_t reg, uint8_t *bufp, uint16_t len) /
  * @return  The data written to the register of IMU
  */
 //e.g. platform_write(masterSpi, LSM6DSOX_CTRL1_XL, data_to_write, 1);
-int32_t platform_write(void *handle, uint16_t reg, uint16_t data, uint16_t len)
+int32_t platform_write(void *handle, uint16_t reg, uint16_t data)
 {
     int32_t ret;
     bool spitransferOK_message;
@@ -314,7 +314,7 @@ int32_t platform_write(void *handle, uint16_t reg, uint16_t data, uint16_t len)
     uint16_t tx_Data = reg|data;
     uint16_t* tx_Address = &tx_Data; /*Address of the combined data of register & data to be transferred */
 
-    transaction.count = len;
+    transaction.count = 1;
     transaction.txBuf = tx_Address;/*!< void * to a buffer with data to be transmitted */
 
     spitransferOK_message = SPI_transfer(handle, &transaction);
@@ -350,7 +350,7 @@ int Data_update_check(void *handle, uint16_t check_type){ //check_type: XL_BIT o
     uint8_t dummy_buf;
     int16_t status_reg;
 
-    status_reg = platform_read(handle, LSM6DSOX_STATUS_REG, &dummy_buf, 1);
+    status_reg = platform_read(handle, LSM6DSOX_STATUS_REG, &dummy_buf);
     bool check_aval = ((status_reg & check_type) == check_type); // if true, the data is updated
 
     return check_aval;
@@ -386,12 +386,12 @@ uint8_t* Acceleration_raw_get(void *handle) {
 
     if(check_XL_aval) {
 
-        data_XL = platform_read(masterSpi, LSM6DSOX_OUTX_L_A, XL_buff_X, 1);
-        data_XH = platform_read(masterSpi, LSM6DSOX_OUTX_H_A, XL_buff_X, 1);
-        data_YL = platform_read(masterSpi, LSM6DSOX_OUTY_L_A, XL_buff_Y, 1);
-        data_YH = platform_read(masterSpi, LSM6DSOX_OUTY_H_A, XL_buff_Y, 1);
-        data_ZL = platform_read(masterSpi, LSM6DSOX_OUTZ_L_A, XL_buff_Z, 1);
-        data_ZH = platform_read(masterSpi, LSM6DSOX_OUTZ_H_A, XL_buff_Z, 1);
+        data_XL = platform_read(masterSpi, LSM6DSOX_OUTX_L_A, XL_buff_X);
+        data_XH = platform_read(masterSpi, LSM6DSOX_OUTX_H_A, XL_buff_X);
+        data_YL = platform_read(masterSpi, LSM6DSOX_OUTY_L_A, XL_buff_Y);
+        data_YH = platform_read(masterSpi, LSM6DSOX_OUTY_H_A, XL_buff_Y);
+        data_ZL = platform_read(masterSpi, LSM6DSOX_OUTZ_L_A, XL_buff_Z);
+        data_ZH = platform_read(masterSpi, LSM6DSOX_OUTZ_H_A, XL_buff_Z);
 
         accel_8bit[0] = (uint8_t)data_XH;
         accel_8bit[1] = (uint8_t)data_XL;
@@ -452,12 +452,12 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
 
     if(check_G_aval) {
 
-        data_XL = platform_read(masterSpi, LSM6DSOX_OUTX_L_G, G_buff, 1);
-        data_XH = platform_read(masterSpi, LSM6DSOX_OUTX_H_G, G_buff, 1);
-        data_YL = platform_read(masterSpi, LSM6DSOX_OUTY_L_G, G_buff, 1);
-        data_YH = platform_read(masterSpi, LSM6DSOX_OUTY_H_G, G_buff, 1);
-        data_ZL = platform_read(masterSpi, LSM6DSOX_OUTZ_L_G, G_buff, 1);
-        data_ZH = platform_read(masterSpi, LSM6DSOX_OUTZ_H_G, G_buff, 1);
+        data_XL = platform_read(masterSpi, LSM6DSOX_OUTX_L_G, G_buff);
+        data_XH = platform_read(masterSpi, LSM6DSOX_OUTX_H_G, G_buff);
+        data_YL = platform_read(masterSpi, LSM6DSOX_OUTY_L_G, G_buff);
+        data_YH = platform_read(masterSpi, LSM6DSOX_OUTY_H_G, G_buff);
+        data_ZL = platform_read(masterSpi, LSM6DSOX_OUTZ_L_G, G_buff);
+        data_ZH = platform_read(masterSpi, LSM6DSOX_OUTZ_H_G, G_buff);
 
         angular_8bit[0] = (uint8_t)data_XH;
         angular_8bit[1] = (uint8_t)data_XL;
@@ -503,7 +503,7 @@ int Activity_Detection(void *handle) {
 
     uint16_t dummy_act;
 
-    ret = platform_read(handle, LSM6DSOX_WAKE_UP_SRC, &dummy_act, 1);
+    ret = platform_read(handle, LSM6DSOX_WAKE_UP_SRC, &dummy_act);
 
     bool check_activity = ((ret&ACTIVITY_BIT) == ACTIVITY_BIT); // if true, there's change in activity status
     printf("pin value is: %d\n", activity_detection);
@@ -577,21 +577,21 @@ int init_SPI_IMU(void) {
   *
   */
 
-int SPI_write_data(void) {
-    int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE, 1);      // Turn on the accelerometer by setting ODR_XL and FS_XL
-    int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE, 1);         // Turn on the gyroscope by setting ODR_G and FS_G
-    int32_t WakeUpDur = platform_write(masterSpi, LSM6DSOX_WAKE_UP_DUR,  WAKE_UP_DUR, 1);       // Set duration for inactivity detection
+int IMU_Configure(void) {
+    int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE);      // Turn on the accelerometer by setting ODR_XL and FS_XL
+    int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE);         // Turn on the gyroscope by setting ODR_G and FS_G
+    int32_t WakeUpDur = platform_write(masterSpi, LSM6DSOX_WAKE_UP_DUR,  WAKE_UP_DUR);       // Set duration for inactivity detection
                                                                                                 // Select activity/inactivity threshold resolution and duration
-    int32_t WakeUpTHS = platform_write(masterSpi, LSM6DSOX_WAKE_UP_THS, WAKE_UP_THS, 1);        // Set activity/inactivity threshold
+    int32_t WakeUpTHS = platform_write(masterSpi, LSM6DSOX_WAKE_UP_THS, WAKE_UP_THS);        // Set activity/inactivity threshold
 
-    int32_t Tap_Enable = platform_write(masterSpi, LSM6DSOX_TAP_CFG0, TAP_CFG0_VALUE, 1);       // Select sleep-change notification
+    int32_t Tap_Enable = platform_write(masterSpi, LSM6DSOX_TAP_CFG0, TAP_CFG0_VALUE);       // Select sleep-change notification
                                                                                                 // Select slope filter
-    int32_t InterruptEnable = platform_write(masterSpi, LSM6DSOX_TAP_CFG2, TAP_CFG2_VALUE, 1);  // Enable interrupt
+    int32_t InterruptEnable = platform_write(masterSpi, LSM6DSOX_TAP_CFG2, TAP_CFG2_VALUE);  // Enable interrupt
                                                                                                 // Inacitvity configuration: accelerometer to 12.5 Hz (LP mode)
                                                                                                 // Gyroscope to Power-Down mode
-    int32_t INT1_Routing = platform_write(masterSpi, LSM6DSOX_MD1_CFG, MD1_CFG_VALUE, 1);       // Activity/Inactivity interrupt driven to INT1 pin
+    int32_t INT1_Routing = platform_write(masterSpi, LSM6DSOX_MD1_CFG, MD1_CFG_VALUE);       // Activity/Inactivity interrupt driven to INT1 pin
 
-    int32_t INT_dataReadt = platform_write(masterSpi, LSM6DSOX_INT1_CTRL, INT1_CTRL_VALUE, 1);
+    int32_t INT_dataReadt = platform_write(masterSpi, LSM6DSOX_INT1_CTRL, INT1_CTRL_VALUE);
 
     printf("SPI initialized successfully and IMU has been waken up\n");
     send_databuffer(test_buffer_configure,sizeof(test_buffer_configure));
@@ -747,7 +747,7 @@ void *masterThread(void *arg0)
     /* Communicate with IMU */
 
     init_SPI_IMU(); //send message if it's successful
-    SPI_write_data();
+    IMU_Configure();
 
     // enable battery monitor enable
     AONBatMonEnable();
