@@ -347,10 +347,10 @@ int32_t platform_write(void *handle, uint16_t reg, uint16_t data)
 //e.g. Data_update_check(masterSpi, LSM6DSOX_STATUS_REG, XL_BIT);
 int Data_update_check(void *handle, uint16_t check_type){ //check_type: XL_BIT or G_BIT
 
-    uint8_t dummy_buf;
+ //   uint8_t dummy_buf;
     int16_t status_reg;
 
-    status_reg = platform_read(handle, LSM6DSOX_STATUS_REG, &dummy_buf);
+    status_reg = platform_read(handle, LSM6DSOX_STATUS_REG, &dummy_address);
     bool check_aval = ((status_reg & check_type) == check_type); // if true, the data is updated
 
     return check_aval;
@@ -497,9 +497,9 @@ int Activity_Detection(void *handle) {
 
     int data_status;
 
-    uint16_t dummy_act;
+  //  uint16_t dummy_act;
 
-    ret = platform_read(handle, LSM6DSOX_WAKE_UP_SRC, &dummy_act);
+    ret = platform_read(handle, LSM6DSOX_WAKE_UP_SRC, &dummy_address);
 
     bool check_activity = ((ret&ACTIVITY_BIT) == ACTIVITY_BIT); // if true, there's change in activity status
     printf("pin value is: %d\n", activity_detection);
