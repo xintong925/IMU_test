@@ -70,8 +70,8 @@
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Semaphore.h>
 
-//#include <ti/devices/DeviceFamily.h>
-//#include DeviceFamily_constructPath(driverlib/cpu.h);
+#include <ti/devices/DeviceFamily.h>
+#include DeviceFamily_constructPath(driverlib/cpu.h)
 
 /* IMU */
 #include "LSM6DSOX.h"
@@ -103,6 +103,7 @@ int Activity_Detection(void *handle);
 int Voltage_Temp_read(void);
 int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read);
 void activityDetectionFxn(uint_least8_t index);
+void intCallBackFxn(PIN_Handle handle, PIN_Id pinId);
 
 #define THREADSTACKSIZE (1024)
 
@@ -125,6 +126,13 @@ static float angular_mdps[3];
 
 
 uint8_t activity_detection = 0;
+
+/* Pin driver handles */
+static PIN_Handle intPinHandle;
+
+/* Global memory storage for a PIN_Config table */
+static PIN_State intPinState;
+
 
 static Semaphore_Struct intSemaphore;
 static Semaphore_Handle intSemaphoreHandle;
@@ -434,7 +442,7 @@ uint8_t* Acceleration_raw_get(void *handle) {
         accel_g[1] = ((float_t)raw_accel[1]) * XL_SCALE_RANGE_2_G/1000;
         accel_g[2] = ((float_t)raw_accel[2]) * XL_SCALE_RANGE_2_G/1000;
 
-   //     printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
+        printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
 
 
    }
@@ -496,7 +504,7 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
         angular_mdps[1] = ((float_t)raw_angular[1]) * G_SCALE_RANGE_1000_DPS/1000;
         angular_mdps[2] = ((float_t)raw_angular[2]) * G_SCALE_RANGE_1000_DPS/1000;
 
-    //    printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
+        printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
 
    }
     return angular_8bit;
@@ -592,6 +600,7 @@ int IMU_Configure(void) {
                                                                                                 // Inacitvity configuration: accelerometer to 12.5 Hz (LP mode)
                                                                                                 // Gyroscope to Power-Down mode
     int32_t INT1_Routing = platform_write(masterSpi, LSM6DSOX_MD1_CFG, MD1_CFG_VALUE);       // Activity/Inactivity interrupt driven to INT1 pin
+    int32_t INT2_Routing = platform_write(masterSpi, LSM6DSOX_MD2_CFG, MD2_CFG_VALUE);
 
     int32_t INT_dataReadt = platform_write(masterSpi, LSM6DSOX_INT1_CTRL, INT1_CTRL_VALUE);
 
@@ -679,7 +688,7 @@ int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read){
 
 void activityDetectionFxn(uint_least8_t index)
 {
-    activity_detection = 1;
+    activity_detection = 2;
 
 }
 
@@ -759,6 +768,10 @@ void *masterThread(void *arg0)
     GPIO_setCallback(IOID12, activityDetectionFxn);
     GPIO_enableInt(IOID12);  /* INT1 */
 
+    GPIO_setConfig(IOID16, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
+    GPIO_setCallback(IOID16, intCallBackFxn);
+    GPIO_enableInt(IOID16);  /* INT2 */
+
     /* Communicate with IMU */
 
     init_SPI_IMU(); //send message if it's successful
@@ -780,15 +793,13 @@ void *masterThread(void *arg0)
     //    int check_status = Activity_Detection(masterSpi); //
      //   Semaphore_pend(intSemaphoreHandle, 300000);
 
-        if(GPIO_read(12)==GPIO_INT_ACTIVE){
+        while(GPIO_read(12)==GPIO_INT_ACTIVE){
     //    if(check_status == 1){
 
-
-        int check_G_aval = Data_update_check(masterSpi, G_BIT); //
-
+            int check_G_aval = Data_update_check(masterSpi, G_BIT); //
 
             if(check_G_aval){
-          //      printf("value of activity detection flag is: %d\n", activity_detection);
+                printf("value of activity detection flag is: %d\n", activity_detection);
 
                 uint8_t* XL_data = Acceleration_raw_get(masterSpi);
                 uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
@@ -796,13 +807,13 @@ void *masterThread(void *arg0)
             }
 
         }
-        else{
+      //  else{
 
             //send_databuffer(test_buffer,sizeof(test_buffer));
-            Voltage_Temp_read();
+        Voltage_Temp_read();
 
 
-            sleep(STANDBY_DURATION_SECOND); //add seconds
+        sleep(STANDBY_DURATION_SECOND); //add seconds
 
      //       Semaphore_pend(intSemaphoreHandle, 1000);
 
@@ -811,7 +822,7 @@ void *masterThread(void *arg0)
 
          //    /* Toggle the LEDs, configuring all LEDs at once */
          //   PIN_setPortOutputValue(hPin, ~currentOutputVal);
-        }
+       // }
 
     }
 

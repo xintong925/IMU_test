@@ -36,6 +36,7 @@ extern "C" {
 #define TAP_CFG0_VALUE           0x0020 // Select sleep-change notification; 0x0020 reporting
 #define TAP_CFG2_VALUE           0x00E0 // Enable interrupt; set XL ODR to 12.5 Hz in LP, gyro to power down
 #define MD1_CFG_VALUE            0x0080 // Routing activity/inactivity event on INT1 enabled
+#define MD2_CFG_VALUE            0x0080
 #define INT1_CTRL_VALUE          0x0000
 
 /* XL and G Value */
