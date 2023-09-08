@@ -530,7 +530,8 @@ GPIO_PinConfig gpioPinConfigs[] = {
     GPIOCC26XX_DIO_24 | GPIO_DO_NOT_CONFIG, /* SPI chip select */
     GPIOCC26XX_DIO_22 | GPIO_DO_NOT_CONFIG, /* LCD power control */
     GPIOCC26XX_DIO_23 | GPIO_DO_NOT_CONFIG, /*LCD enable */
-    CC1310_LAUNCHXL_DIO12 | GPIO_DO_NOT_CONFIG,
+    GPIOCC26XX_DIO_12 | GPIO_DO_NOT_CONFIG, /* INT1 */
+    GPIOCC26XX_DIO_16 | GPIO_DO_NOT_CONFIG,
 
 
 };
@@ -547,6 +548,16 @@ GPIO_CallbackFxn gpioCallbackFunctions[] = {
     NULL,  /* Button 1 */
     NULL,  /* CC1310_LAUNCHXL_SPI_MASTER_READY */
     NULL,  /* CC1310_LAUNCHXL_SPI_SLAVE_READY */
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
 };
 
 const GPIOCC26XX_Config GPIOCC26XX_config = {

@@ -45,6 +45,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 /* POSIX Header files */
 #include <pthread.h>
@@ -64,6 +65,13 @@
 #include <ti/drivers/Power.h>
 #include <ti/devices/cc13x0/driverlib/gpio.h>
 #include <ti/devices/cc13x0/driverlib/aon_batmon.h>
+
+/* BIOS Header files */
+#include <ti/sysbios/BIOS.h>
+#include <ti/sysbios/knl/Semaphore.h>
+
+//#include <ti/devices/DeviceFamily.h>
+//#include DeviceFamily_constructPath(driverlib/cpu.h);
 
 /* IMU */
 #include "LSM6DSOX.h"
@@ -116,10 +124,10 @@ static float accel_g[3];
 static float angular_mdps[3];
 
 
-
 uint8_t activity_detection = 0;
 
-
+static Semaphore_Struct intSemaphore;
+static Semaphore_Handle intSemaphoreHandle;
 
 
 /***** Variable declarations for RF*****/
@@ -148,6 +156,11 @@ PIN_Config LedPinTable[] =
     PIN_TERMINATE                                                                      /* Terminate list */
 };
 
+PIN_Config intPinTable[] = {
+    IOID16 | PIN_INPUT_EN | PIN_PULLUP | PIN_IRQ_NEGEDGE,
+    PIN_TERMINATE
+};
+
 /*
  *  ======== slaveReadyFxn ========
  *  Callback function for the GPIO interrupt on Board_SPI_SLAVE_READY.
@@ -155,6 +168,13 @@ PIN_Config LedPinTable[] =
 void slaveReadyFxn(uint_least8_t index)
 {
     data_ready = 1;
+    //sem_post(&masterSem);
+}
+
+void intCallBackFxn(PIN_Handle handle, PIN_Id pinId)
+{
+    printf("It was interrupted!");
+    activity_detection = 1;
     //sem_post(&masterSem);
 }
 
@@ -414,7 +434,7 @@ uint8_t* Acceleration_raw_get(void *handle) {
         accel_g[1] = ((float_t)raw_accel[1]) * XL_SCALE_RANGE_2_G/1000;
         accel_g[2] = ((float_t)raw_accel[2]) * XL_SCALE_RANGE_2_G/1000;
 
-     //   printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
+   //     printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
 
 
    }
@@ -476,7 +496,7 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
         angular_mdps[1] = ((float_t)raw_angular[1]) * G_SCALE_RANGE_1000_DPS/1000;
         angular_mdps[2] = ((float_t)raw_angular[2]) * G_SCALE_RANGE_1000_DPS/1000;
 
-     //   printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
+    //    printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
 
    }
     return angular_8bit;
@@ -502,8 +522,8 @@ int Activity_Detection(void *handle) {
     ret = platform_read(handle, LSM6DSOX_WAKE_UP_SRC, &dummy_address);
 
     bool check_activity = ((ret&ACTIVITY_BIT) == ACTIVITY_BIT); // if true, there's change in activity status
-    printf("pin value is: %d\n", activity_detection);
-    printf("GPIO 12 is: 0x%02X\n", GPIO_read(12));
+  //  printf("pin value is: %d\n", activity_detection);
+  //  printf("GPIO 12 is: 0x%02X\n", GPIO_read(12));
 
     if(check_activity) {
     //    printf("zzzzzzzzzZZZZZZZZZZZZZZZZZ\n");
@@ -548,21 +568,6 @@ int init_SPI_IMU(void) {
 
     }
 
-
-/* Enable interrupt pin */
-
- //   GPIO_setConfig(Board_DIO12, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
- //   GPIO_setCallback(Board_DIO12, activityDetectionFxn);
- //   GPIO_enableInt(Board_DIO12);  /* INT1 */
-
- //   GPIO_setConfig(12, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
- //   GPIO_setCallback(12, activityDetectionFxn);
- //   GPIO_enableInt(12);
-      /* INT1 */
-
-  //  GPIO_setConfig(Board_DIO15, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_RISING);
-  //  GPIO_enableInt(Board_DIO15);  /* INT2 */
-
     return 0;
 
 }
@@ -574,6 +579,7 @@ int init_SPI_IMU(void) {
   */
 
 int IMU_Configure(void) {
+
     int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE);      // Turn on the accelerometer by setting ODR_XL and FS_XL
     int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE);         // Turn on the gyroscope by setting ODR_G and FS_G
     int32_t WakeUpDur = platform_write(masterSpi, LSM6DSOX_WAKE_UP_DUR,  WAKE_UP_DUR);       // Set duration for inactivity detection
@@ -688,12 +694,25 @@ void *masterThread(void *arg0)
     int32_t         status;
     PIN_State       pinState;
     PIN_Handle      hPin;
+    PIN_Handle      intPinHandle;
+    PIN_State       intPinState;
     uint32_t        currentOutputVal;
   //  uint32_t        standbyDuration = 3;
 
 
     /* Allocate LED pins */
-    hPin = PIN_open(&pinState, LedPinTable);
+ //   hPin = PIN_open(&pinState, LedPinTable);
+
+    /* Initialize button semaphore */
+    Semaphore_construct(&intSemaphore, 0, NULL);
+    intSemaphoreHandle = Semaphore_handle(&intSemaphore);
+
+    intPinHandle = PIN_open(&intPinState, intPinTable);
+
+    /* Setup callback for button pins */
+    PIN_registerIntCb(intPinHandle, &intCallBackFxn);
+
+
 
     /*
      * Board_SPI_MASTER_READY & Board_SPI_SLAVE_READY are GPIO pins connected
@@ -736,13 +755,14 @@ void *masterThread(void *arg0)
     Power_enablePolicy(); //how to sleep
 
 
-    GPIO_setConfig(Board_DIO12, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
-    GPIO_setCallback(Board_DIO12, activityDetectionFxn);
-    GPIO_enableInt(Board_DIO12);  /* INT1 */
+    GPIO_setConfig(IOID12, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
+    GPIO_setCallback(IOID12, activityDetectionFxn);
+    GPIO_enableInt(IOID12);  /* INT1 */
 
     /* Communicate with IMU */
 
     init_SPI_IMU(); //send message if it's successful
+
     IMU_Configure();
 
     // enable battery monitor enable
@@ -757,17 +777,15 @@ void *masterThread(void *arg0)
 
      //   printf("value of activity detection flag is: %d\n", activity_detection);
 
-      //  int check_status = Activity_Detection(masterSpi); //
-      //  int32_t rx_WakeUp = platform_read(masterSpi, LSM6DSOX_CTRL1_XL, &dummy_read_G, 1);
-     //   uint32_t pin_out_value = PIN_getOutputValue(PIN_Id Board_DIO12);
-    //    printf("value of activity detection flag is: %d\n", activity_detection);
-     //   printf("value of interrupt pin 1 is 0x%04X\n", PIN_getOutputValue(12));
+    //    int check_status = Activity_Detection(masterSpi); //
+     //   Semaphore_pend(intSemaphoreHandle, 300000);
 
-      //  if(activity_detection == 1){
-      //  if(check_status == 1){
         if(GPIO_read(12)==GPIO_INT_ACTIVE){
-            int check_G_aval = Data_update_check(masterSpi, G_BIT); //
-        //    printf("value of activity detection flag is: %d\n", activity_detection);
+    //    if(check_status == 1){
+
+
+        int check_G_aval = Data_update_check(masterSpi, G_BIT); //
+
 
             if(check_G_aval){
           //      printf("value of activity detection flag is: %d\n", activity_detection);
@@ -783,13 +801,16 @@ void *masterThread(void *arg0)
             //send_databuffer(test_buffer,sizeof(test_buffer));
             Voltage_Temp_read();
 
-            sleep(STANDBY_DURATION); //add seconds
 
-            /* Read current output value for all pins */
-            currentOutputVal =  PIN_getPortOutputValue(hPin);
+            sleep(STANDBY_DURATION_SECOND); //add seconds
 
-             /* Toggle the LEDs, configuring all LEDs at once */
-            PIN_setPortOutputValue(hPin, ~currentOutputVal);
+     //       Semaphore_pend(intSemaphoreHandle, 1000);
+
+         //   /* Read current output value for all pins */
+         //   currentOutputVal =  PIN_getPortOutputValue(hPin);
+
+         //    /* Toggle the LEDs, configuring all LEDs at once */
+         //   PIN_setPortOutputValue(hPin, ~currentOutputVal);
         }
 
     }

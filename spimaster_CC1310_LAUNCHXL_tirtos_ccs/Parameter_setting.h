@@ -19,7 +19,7 @@ extern "C" {
 #define PAYLOAD_LENGTH 20
 
 /* Sleep */
-#define STANDBY_DURATION 3
+#define STANDBY_DURATION_SECOND 2
 
 /* Bit to read */
 #define READ_BIT                  0x8000
