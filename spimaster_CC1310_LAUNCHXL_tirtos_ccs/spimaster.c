@@ -103,6 +103,7 @@ int Activity_Detection(void *handle);
 int Voltage_Temp_read(void);
 int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read);
 void activityDetectionFxn(uint_least8_t index);
+void INT2CallBackFxn(PIN_Handle handle, PIN_Id pinId);
 //void intCallBackFxn(PIN_Handle handle, PIN_Id pinId);
 
 #define THREADSTACKSIZE (1024)
@@ -125,7 +126,8 @@ static float accel_g[3];
 static float angular_mdps[3];
 
 
-uint8_t activity_detection = 0;
+
+int actual_act;
 
 /* Pin driver handles */
 static PIN_Handle INT2PinHandle;
@@ -133,9 +135,9 @@ static PIN_Handle INT2PinHandle;
 /* Global memory storage for a PIN_Config table */
 static PIN_State INT2PinState;
 
-
-static Semaphore_Struct INT2Semaphore;
-static Semaphore_Handle INT2SemaphoreHandle;
+int globalFlag = 0;
+//static Semaphore_Struct INT2Semaphore;
+//static Semaphore_Handle INT2SemaphoreHandle;
 
 
 /***** Variable declarations for RF*****/
@@ -165,7 +167,7 @@ PIN_Config LedPinTable[] =
 };
 
 PIN_Config INT2PinTable[] = {
-    IOID6 | PIN_INPUT_EN | PIN_PULLUP | PIN_IRQ_NEGEDGE,
+    IOID6 | PIN_INPUT_EN | PIN_PULLDOWN | PIN_IRQ_NEGEDGE,
     PIN_TERMINATE
 };
 
@@ -181,9 +183,14 @@ void slaveReadyFxn(uint_least8_t index)
 
 void INT2CallBackFxn(PIN_Handle handle, PIN_Id pinId)
 {
-    printf("It was interrupted!");
-    activity_detection = 1;
-    //sem_post(&masterSem);
+    globalFlag = (globalFlag == 0) ? 1 : 0;
+    printf("value is %d\n", globalFlag);
+
+//    if(activity_detection == 1) {
+//
+//    uint8_t* XL_data = Acceleration_raw_get(masterSpi);
+//    }
+
 }
 
 /*
@@ -442,7 +449,7 @@ uint8_t* Acceleration_raw_get(void *handle) {
         accel_g[1] = ((float_t)raw_accel[1]) * XL_SCALE_RANGE_2_G/1000;
         accel_g[2] = ((float_t)raw_accel[2]) * XL_SCALE_RANGE_2_G/1000;
 
-        printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
+     //   printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
 
 
    }
@@ -504,7 +511,7 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
         angular_mdps[1] = ((float_t)raw_angular[1]) * G_SCALE_RANGE_1000_DPS/1000;
         angular_mdps[2] = ((float_t)raw_angular[2]) * G_SCALE_RANGE_1000_DPS/1000;
 
-        printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
+    //    printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
 
    }
     return angular_8bit;
@@ -653,8 +660,8 @@ int Voltage_Temp_read(void){
         mdata_buffer[i + 2] = Temp_bytes[i];
     }
 
-    printf("Voltage is %f\n", BATvoltage);
-    printf("Temp is %f\n", TEMPdegc);
+ //   printf("Voltage is %f\n", BATvoltage);
+ //   printf("Temp is %f\n", TEMPdegc);
 
 
     send_databuffer(mdata_buffer,sizeof(mdata_buffer));
@@ -688,8 +695,8 @@ int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read){
 
 void activityDetectionFxn(uint_least8_t index)
 {
-    activity_detection = 2;
-    printf("Interrupt!!!!");
+  //  activity_detection = 2;
+ //   printf("Interrupt!!!!");
 
 }
 
@@ -705,6 +712,8 @@ void *masterThread(void *arg0)
     PIN_State       pinState;
     PIN_Handle      hPin;
 
+    PIN_Handle      INT2PinHandle;
+    PIN_State       INT2PinState;
     uint32_t        currentOutputVal;
   //  uint32_t        standbyDuration = 3;
 
@@ -772,6 +781,16 @@ void *masterThread(void *arg0)
   //  GPIO_setCallback(IOID16, INT2CallBackFxn);
   //  GPIO_enableInt(IOID16);  /* INT2 */
 
+
+    /* Initialize button semaphore */
+ //   Semaphore_construct(&INT2Semaphore, 0, NULL);
+//    INT2SemaphoreHandle = Semaphore_handle(&INT2Semaphore);
+
+    INT2PinHandle = PIN_open(&INT2PinState, INT2PinTable);
+
+       /* Setup callback for button pins */
+    PIN_registerIntCb(INT2PinHandle, &INT2CallBackFxn);
+
     /* Communicate with IMU */
 
     init_SPI_IMU(); //send message if it's successful
@@ -787,43 +806,59 @@ void *masterThread(void *arg0)
 
 // if using GPIO_read(PIN_INDEX), TAP_CFG0_VALUE needs to be set as 0x0020
     while (1) { // add PinInterrupt - minimize the number of communications
-
-     //   printf("value of activity detection flag is: %d\n", activity_detection);
-
-        int check_status = Activity_Detection(masterSpi); //
-     //   Semaphore_pend(intSemaphoreHandle, 300000);
-
-    //    while(GPIO_read(12)==GPIO_INT_ACTIVE){
-        if(check_status == 1){
-
-            int check_G_aval = Data_update_check(masterSpi, G_BIT); //
-
+     //   sleep(7);
+//        printf("value is: %d\n", activity_detection);
+//
+        if(globalFlag == 1){
+            int check_G_aval = Data_update_check(masterSpi, G_BIT);
             if(check_G_aval){
-              //  printf("value of activity detection flag is: %d\n", activity_detection);
-
                 uint8_t* XL_data = Acceleration_raw_get(masterSpi);
                 uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
                 RF_transmission(XL_data, G_data);
             }
-
         }
         else{
-
-            //send_databuffer(test_buffer,sizeof(test_buffer));
             Voltage_Temp_read();
-
-
-            sleep(STANDBY_DURATION_SECOND); //add seconds
-
-     //       Semaphore_pend(intSemaphoreHandle, 1000);
-
-         //   /* Read current output value for all pins */
-         //   currentOutputVal =  PIN_getPortOutputValue(hPin);
-
-         //    /* Toggle the LEDs, configuring all LEDs at once */
-         //   PIN_setPortOutputValue(hPin, ~currentOutputVal);
+            sleep(3);
         }
 
+
+
+
+     //   printf("value of activity detection flag is: %d\n", activity_detection);
+
+   //     int check_status = Activity_Detection(masterSpi); //
+     //   Semaphore_pend(intSemaphoreHandle, 300000);
+
+    //    while(GPIO_read(12)==GPIO_INT_ACTIVE){
+    //    if(check_status == 1){
+
+      //      int check_G_aval = Data_update_check(masterSpi, G_BIT); //
+
+        //    if(check_G_aval){
+              //  printf("value of activity detection flag is: %d\n", activity_detection);
+//
+//                uint8_t* XL_data = Acceleration_raw_get(masterSpi);
+//                uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
+//                RF_transmission(XL_data, G_data);
+//            }
+//
+//        }
+//        else{
+//
+//            //send_databuffer(test_buffer,sizeof(test_buffer));
+//            Voltage_Temp_read();
+//            sleep(STANDBY_DURATION_SECOND); //add seconds
+//
+//     //       Semaphore_pend(intSemaphoreHandle, 1000);
+//
+//         //   /* Read current output value for all pins */
+//         //   currentOutputVal =  PIN_getPortOutputValue(hPin);
+//
+//         //    /* Toggle the LEDs, configuring all LEDs at once */
+//         //   PIN_setPortOutputValue(hPin, ~currentOutputVal);
+//        }
+//
     }
 
     return (NULL);
@@ -839,8 +874,7 @@ void *mainThread(void *arg0)
     struct sched_param  priParam;
     int                 retc;
     int                 detachState;
-//    PIN_Handle          INT2PinHandle;
-//    PIN_State           INT2PinState;
+
 
 
     /* Call driver init functions. */
@@ -850,15 +884,6 @@ void *mainThread(void *arg0)
     SPI_init();
  //   Power_init();
  //   Power_enablePolicy();
-
-    /* Initialize button semaphore */
- //   Semaphore_construct(&INT2Semaphore, 0, NULL);
- //   INT2SemaphoreHandle = Semaphore_handle(&INT2Semaphore);
-
-    INT2PinHandle = PIN_open(&INT2PinState, INT2PinTable);
-
-    /* Setup callback for button pins */
-    PIN_registerIntCb(INT2PinHandle, &INT2CallBackFxn);
 
     /* Open the display for output */
     display = Display_open(Display_Type_UART, NULL);
