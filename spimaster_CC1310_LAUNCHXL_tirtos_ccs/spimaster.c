@@ -103,7 +103,7 @@ int Activity_Detection(void *handle);
 int Voltage_Temp_read(void);
 int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read);
 void activityDetectionFxn(uint_least8_t index);
-void intCallBackFxn(PIN_Handle handle, PIN_Id pinId);
+//void intCallBackFxn(PIN_Handle handle, PIN_Id pinId);
 
 #define THREADSTACKSIZE (1024)
 
@@ -128,14 +128,14 @@ static float angular_mdps[3];
 uint8_t activity_detection = 0;
 
 /* Pin driver handles */
-static PIN_Handle intPinHandle;
+static PIN_Handle INT2PinHandle;
 
 /* Global memory storage for a PIN_Config table */
-static PIN_State intPinState;
+static PIN_State INT2PinState;
 
 
-static Semaphore_Struct intSemaphore;
-static Semaphore_Handle intSemaphoreHandle;
+static Semaphore_Struct INT2Semaphore;
+static Semaphore_Handle INT2SemaphoreHandle;
 
 
 /***** Variable declarations for RF*****/
@@ -164,8 +164,8 @@ PIN_Config LedPinTable[] =
     PIN_TERMINATE                                                                      /* Terminate list */
 };
 
-PIN_Config intPinTable[] = {
-    IOID16 | PIN_INPUT_EN | PIN_PULLUP | PIN_IRQ_NEGEDGE,
+PIN_Config INT2PinTable[] = {
+    IOID6 | PIN_INPUT_EN | PIN_PULLUP | PIN_IRQ_NEGEDGE,
     PIN_TERMINATE
 };
 
@@ -179,7 +179,7 @@ void slaveReadyFxn(uint_least8_t index)
     //sem_post(&masterSem);
 }
 
-void intCallBackFxn(PIN_Handle handle, PIN_Id pinId)
+void INT2CallBackFxn(PIN_Handle handle, PIN_Id pinId)
 {
     printf("It was interrupted!");
     activity_detection = 1;
@@ -602,7 +602,7 @@ int IMU_Configure(void) {
     int32_t INT1_Routing = platform_write(masterSpi, LSM6DSOX_MD1_CFG, MD1_CFG_VALUE);       // Activity/Inactivity interrupt driven to INT1 pin
     int32_t INT2_Routing = platform_write(masterSpi, LSM6DSOX_MD2_CFG, MD2_CFG_VALUE);
 
-    int32_t INT_dataReadt = platform_write(masterSpi, LSM6DSOX_INT1_CTRL, INT1_CTRL_VALUE);
+ //   int32_t INT_dataReadt = platform_write(masterSpi, LSM6DSOX_INT1_CTRL, INT1_CTRL_VALUE);
 
     printf("SPI initialized successfully and IMU has been waken up\n");
     send_databuffer(test_buffer_configure,sizeof(test_buffer_configure));
@@ -689,6 +689,7 @@ int RF_transmission(uint8_t* XL_data_read, uint8_t* G_data_read){
 void activityDetectionFxn(uint_least8_t index)
 {
     activity_detection = 2;
+    printf("Interrupt!!!!");
 
 }
 
@@ -703,8 +704,7 @@ void *masterThread(void *arg0)
     int32_t         status;
     PIN_State       pinState;
     PIN_Handle      hPin;
-    PIN_Handle      intPinHandle;
-    PIN_State       intPinState;
+
     uint32_t        currentOutputVal;
   //  uint32_t        standbyDuration = 3;
 
@@ -713,13 +713,13 @@ void *masterThread(void *arg0)
  //   hPin = PIN_open(&pinState, LedPinTable);
 
     /* Initialize button semaphore */
-    Semaphore_construct(&intSemaphore, 0, NULL);
-    intSemaphoreHandle = Semaphore_handle(&intSemaphore);
+//    Semaphore_construct(&INT2Semaphore, 0, NULL);
+//    INT2SemaphoreHandle = Semaphore_handle(&INT2Semaphore);
 
-    intPinHandle = PIN_open(&intPinState, intPinTable);
+ //   INT2PinHandle = PIN_open(&INT2PinState, INT2PinTable);
 
     /* Setup callback for button pins */
-    PIN_registerIntCb(intPinHandle, &intCallBackFxn);
+ //   PIN_registerIntCb(INT2PinHandle, &INT2CallBackFxn);
 
 
 
@@ -764,13 +764,13 @@ void *masterThread(void *arg0)
     Power_enablePolicy(); //how to sleep
 
 
-    GPIO_setConfig(IOID12, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
-    GPIO_setCallback(IOID12, activityDetectionFxn);
-    GPIO_enableInt(IOID12);  /* INT1 */
+    GPIO_setConfig(IOID5, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
+    GPIO_setCallback(IOID5, activityDetectionFxn);
+    GPIO_enableInt(IOID5);  /* INT1 */
 
-    GPIO_setConfig(IOID16, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
-    GPIO_setCallback(IOID16, intCallBackFxn);
-    GPIO_enableInt(IOID16);  /* INT2 */
+  //  GPIO_setConfig(IOID16, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
+  //  GPIO_setCallback(IOID16, INT2CallBackFxn);
+  //  GPIO_enableInt(IOID16);  /* INT2 */
 
     /* Communicate with IMU */
 
@@ -790,16 +790,16 @@ void *masterThread(void *arg0)
 
      //   printf("value of activity detection flag is: %d\n", activity_detection);
 
-    //    int check_status = Activity_Detection(masterSpi); //
+        int check_status = Activity_Detection(masterSpi); //
      //   Semaphore_pend(intSemaphoreHandle, 300000);
 
-        while(GPIO_read(12)==GPIO_INT_ACTIVE){
-    //    if(check_status == 1){
+    //    while(GPIO_read(12)==GPIO_INT_ACTIVE){
+        if(check_status == 1){
 
             int check_G_aval = Data_update_check(masterSpi, G_BIT); //
 
             if(check_G_aval){
-                printf("value of activity detection flag is: %d\n", activity_detection);
+              //  printf("value of activity detection flag is: %d\n", activity_detection);
 
                 uint8_t* XL_data = Acceleration_raw_get(masterSpi);
                 uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
@@ -807,13 +807,13 @@ void *masterThread(void *arg0)
             }
 
         }
-      //  else{
+        else{
 
             //send_databuffer(test_buffer,sizeof(test_buffer));
-        Voltage_Temp_read();
+            Voltage_Temp_read();
 
 
-        sleep(STANDBY_DURATION_SECOND); //add seconds
+            sleep(STANDBY_DURATION_SECOND); //add seconds
 
      //       Semaphore_pend(intSemaphoreHandle, 1000);
 
@@ -822,7 +822,7 @@ void *masterThread(void *arg0)
 
          //    /* Toggle the LEDs, configuring all LEDs at once */
          //   PIN_setPortOutputValue(hPin, ~currentOutputVal);
-       // }
+        }
 
     }
 
@@ -839,6 +839,8 @@ void *mainThread(void *arg0)
     struct sched_param  priParam;
     int                 retc;
     int                 detachState;
+//    PIN_Handle          INT2PinHandle;
+//    PIN_State           INT2PinState;
 
 
     /* Call driver init functions. */
@@ -849,6 +851,14 @@ void *mainThread(void *arg0)
  //   Power_init();
  //   Power_enablePolicy();
 
+    /* Initialize button semaphore */
+ //   Semaphore_construct(&INT2Semaphore, 0, NULL);
+ //   INT2SemaphoreHandle = Semaphore_handle(&INT2Semaphore);
+
+    INT2PinHandle = PIN_open(&INT2PinState, INT2PinTable);
+
+    /* Setup callback for button pins */
+    PIN_registerIntCb(INT2PinHandle, &INT2CallBackFxn);
 
     /* Open the display for output */
     display = Display_open(Display_Type_UART, NULL);
@@ -858,7 +868,7 @@ void *mainThread(void *arg0)
     }
 
     /* Turn on user LED */
-    GPIO_write(Board_GPIO_LED0, Board_GPIO_LED_ON);
+ //   GPIO_write(Board_GPIO_LED0, Board_GPIO_LED_ON);
 
     Display_printf(display, 0, 0, "Starting the SPI master example");
     Display_printf(display, 0, 0, "This example requires external wires to be "

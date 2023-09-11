@@ -517,7 +517,10 @@ GPIO_PinConfig gpioPinConfigs[] = {
 
     /* Output pins */
     GPIOCC26XX_DIO_07 | GPIO_DO_NOT_CONFIG,  /* Green LED */
-    GPIOCC26XX_DIO_06 | GPIO_DO_NOT_CONFIG,  /* Red LED */
+
+    GPIOCC26XX_DIO_05 | GPIO_DO_NOT_CONFIG, /* INT1 */
+
+    GPIOCC26XX_DIO_06 | GPIO_DO_NOT_CONFIG,  /* INT2 */
     GPIOCC26XX_DIO_30 | GPIO_DO_NOT_CONFIG,  /* TMP116_EN */
 
     /* SPI Flash CSN */
@@ -530,7 +533,7 @@ GPIO_PinConfig gpioPinConfigs[] = {
     GPIOCC26XX_DIO_24 | GPIO_DO_NOT_CONFIG, /* SPI chip select */
     GPIOCC26XX_DIO_22 | GPIO_DO_NOT_CONFIG, /* LCD power control */
     GPIOCC26XX_DIO_23 | GPIO_DO_NOT_CONFIG, /*LCD enable */
-    GPIOCC26XX_DIO_12 | GPIO_DO_NOT_CONFIG, /* INT1 */
+ //   GPIOCC26XX_DIO_05 | GPIO_DO_NOT_CONFIG, /* INT1 */
     GPIOCC26XX_DIO_16 | GPIO_DO_NOT_CONFIG,
 
 
