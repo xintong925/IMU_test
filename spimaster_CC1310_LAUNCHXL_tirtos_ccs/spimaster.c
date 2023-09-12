@@ -185,6 +185,7 @@ void INT2CallBackFxn(PIN_Handle handle, PIN_Id pinId)
 {
     globalFlag = (globalFlag == 0) ? 1 : 0;
     printf("value is %d\n", globalFlag);
+    Voltage_Temp_read();
 
 //    if(activity_detection == 1) {
 //
@@ -449,7 +450,7 @@ uint8_t* Acceleration_raw_get(void *handle) {
         accel_g[1] = ((float_t)raw_accel[1]) * XL_SCALE_RANGE_2_G/1000;
         accel_g[2] = ((float_t)raw_accel[2]) * XL_SCALE_RANGE_2_G/1000;
 
-     //   printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
+        printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
 
 
    }
@@ -511,7 +512,7 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
         angular_mdps[1] = ((float_t)raw_angular[1]) * G_SCALE_RANGE_1000_DPS/1000;
         angular_mdps[2] = ((float_t)raw_angular[2]) * G_SCALE_RANGE_1000_DPS/1000;
 
-    //    printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
+        printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
 
    }
     return angular_8bit;
@@ -660,8 +661,8 @@ int Voltage_Temp_read(void){
         mdata_buffer[i + 2] = Temp_bytes[i];
     }
 
- //   printf("Voltage is %f\n", BATvoltage);
- //   printf("Temp is %f\n", TEMPdegc);
+    printf("Voltage is %f\n", BATvoltage);
+    printf("Temp is %f\n", TEMPdegc);
 
 
     send_databuffer(mdata_buffer,sizeof(mdata_buffer));
@@ -806,10 +807,10 @@ void *masterThread(void *arg0)
 
 // if using GPIO_read(PIN_INDEX), TAP_CFG0_VALUE needs to be set as 0x0020
     while (1) { // add PinInterrupt - minimize the number of communications
-     //   sleep(7);
+      //  sleep(7);
 //        printf("value is: %d\n", activity_detection);
 //
-        if(globalFlag == 1){
+        while(globalFlag == 1){
             int check_G_aval = Data_update_check(masterSpi, G_BIT);
             if(check_G_aval){
                 uint8_t* XL_data = Acceleration_raw_get(masterSpi);
@@ -817,10 +818,10 @@ void *masterThread(void *arg0)
                 RF_transmission(XL_data, G_data);
             }
         }
-        else{
-            Voltage_Temp_read();
-            sleep(3);
-        }
+//        else{
+//            Voltage_Temp_read();
+//            sleep(3);
+//        }
 
 
 
