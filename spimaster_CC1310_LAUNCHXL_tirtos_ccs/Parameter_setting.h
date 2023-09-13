@@ -31,7 +31,7 @@ extern "C" {
 /* Configuration of XL, G and interrupt */
 #define CTRL1_XL_VALUE           0x0050 //ODR_XL = 208 Hz, FS_XL = ±2 g
 #define CTRL2_G_VALUE            0x0038 //ODR_G = 52 Hz, FS_G = ±1000 dps
-#define WAKE_UP_DUR              0x0062 //last 4 bits: duration for inactivity detection - LSB*512/ODR_XL
+#define WAKE_UP_DUR              0x0068 //last 4 bits: duration for inactivity detection - LSB*512/ODR_XL
 #define WAKE_UP_THS              0x0002 // Threshold for wakeup (last 5 bits)
 #define TAP_CFG0_VALUE           0x0000 // Select sleep-change notification; 0x0020 reporting
 #define TAP_CFG2_VALUE           0x00E0 // Enable interrupt; set XL ODR to 12.5 Hz in LP, gyro to power down

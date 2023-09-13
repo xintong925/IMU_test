@@ -167,7 +167,7 @@ PIN_Config LedPinTable[] =
 };
 
 PIN_Config INT2PinTable[] = {
-    IOID6 | PIN_INPUT_EN | PIN_PULLDOWN | PIN_IRQ_NEGEDGE,
+    IOID5 | PIN_INPUT_EN | PIN_PULLDOWN | PIN_IRQ_NEGEDGE,
     PIN_TERMINATE
 };
 
@@ -185,7 +185,12 @@ void INT2CallBackFxn(PIN_Handle handle, PIN_Id pinId)
 {
     globalFlag = (globalFlag == 0) ? 1 : 0;
     printf("value is %d\n", globalFlag);
-    Voltage_Temp_read();
+
+//    uint8_t* XL_data = Acceleration_raw_get(masterSpi);
+//    uint8_t* G_data = Angular_Rate_raw_get(masterSpi);
+//    RF_transmission(XL_data, G_data);
+
+//    Voltage_Temp_read();
 
 //    if(activity_detection == 1) {
 //
@@ -450,7 +455,7 @@ uint8_t* Acceleration_raw_get(void *handle) {
         accel_g[1] = ((float_t)raw_accel[1]) * XL_SCALE_RANGE_2_G/1000;
         accel_g[2] = ((float_t)raw_accel[2]) * XL_SCALE_RANGE_2_G/1000;
 
-        printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
+  //      printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
 
 
    }
@@ -512,7 +517,7 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
         angular_mdps[1] = ((float_t)raw_angular[1]) * G_SCALE_RANGE_1000_DPS/1000;
         angular_mdps[2] = ((float_t)raw_angular[2]) * G_SCALE_RANGE_1000_DPS/1000;
 
-        printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
+  //      printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
 
    }
     return angular_8bit;
@@ -774,9 +779,9 @@ void *masterThread(void *arg0)
     Power_enablePolicy(); //how to sleep
 
 
-    GPIO_setConfig(IOID5, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
-    GPIO_setCallback(IOID5, activityDetectionFxn);
-    GPIO_enableInt(IOID5);  /* INT1 */
+  //  GPIO_setConfig(IOID5, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
+  //  GPIO_setCallback(IOID5, activityDetectionFxn);
+  //  GPIO_enableInt(IOID5);  /* INT1 */
 
   //  GPIO_setConfig(IOID16, GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_FALLING);
   //  GPIO_setCallback(IOID16, INT2CallBackFxn);
@@ -807,7 +812,7 @@ void *masterThread(void *arg0)
 
 // if using GPIO_read(PIN_INDEX), TAP_CFG0_VALUE needs to be set as 0x0020
     while (1) { // add PinInterrupt - minimize the number of communications
-      //  sleep(7);
+ //       sleep(7);
 //        printf("value is: %d\n", activity_detection);
 //
         while(globalFlag == 1){
@@ -818,9 +823,14 @@ void *masterThread(void *arg0)
                 RF_transmission(XL_data, G_data);
             }
         }
-//        else{
-//            Voltage_Temp_read();
-//            sleep(3);
+        sleep(3);
+        Voltage_Temp_read();
+////        else{
+////            Voltage_Temp_read();
+//        while(globalFlag==0){
+//            sleep(7);
+//        }
+
 //        }
 
 
