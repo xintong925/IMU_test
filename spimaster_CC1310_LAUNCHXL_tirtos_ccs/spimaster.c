@@ -229,7 +229,7 @@ void send_databuffer(const void* buffer, int buffer_size) // buffer: size of the
 //            packet[i] = ((uint8_t*)buffer)+(PAYLOAD_LENGTH)*j+i /* check pointer math */
         }
 
-        /* Send packet */ // 01 23 - 23 01// data flipped
+        /* Send packet */
         RF_EventMask terminationReason = RF_runCmd(rfHandle, (RF_Op*)&RF_cmdPropTx,
                                                    RF_PriorityNormal, NULL, 0);
 
@@ -451,11 +451,11 @@ uint8_t* Acceleration_raw_get(void *handle) {
 
     //    printf("data X: 0x%04X\n", raw_accel[0]);
 
-        accel_g[0] = ((float_t)raw_accel[0]) * XL_SCALE_RANGE_2_G/1000; // Refer Adafruit_LSM6DS.cpp
-        accel_g[1] = ((float_t)raw_accel[1]) * XL_SCALE_RANGE_2_G/1000;
-        accel_g[2] = ((float_t)raw_accel[2]) * XL_SCALE_RANGE_2_G/1000;
+        accel_g[0] = ((float_t)raw_accel[0]) * XL_SCALE_RANGE_4_G/1000; // Refer Adafruit_LSM6DS.cpp
+        accel_g[1] = ((float_t)raw_accel[1]) * XL_SCALE_RANGE_4_G/1000;
+        accel_g[2] = ((float_t)raw_accel[2]) * XL_SCALE_RANGE_4_G/1000;
 
-  //      printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
+   //     printf("Acceleration [g]:%4.2f\t%4.2f\t%4.2f\r\n", accel_g[0], accel_g[1], accel_g[2]);
 
 
    }
@@ -483,8 +483,6 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
     uint16_t data_ZL;
     uint16_t data_ZH;
 
-  //  uint8_t G_buff[6];
-
     int check_G_aval = Data_update_check(handle, G_BIT);
 
     if(check_G_aval) {
@@ -503,7 +501,6 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
         angular_8bit[4] = (uint8_t)data_ZH;
         angular_8bit[5] = (uint8_t)data_ZL;
 
-
         // can be removed
         data_XH <<= 8;
         data_YH <<= 8;
@@ -517,7 +514,7 @@ uint8_t* Angular_Rate_raw_get(void *handle) {
         angular_mdps[1] = ((float_t)raw_angular[1]) * G_SCALE_RANGE_1000_DPS/1000;
         angular_mdps[2] = ((float_t)raw_angular[2]) * G_SCALE_RANGE_1000_DPS/1000;
 
-  //      printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
+   //     printf("Angular rate [dps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_mdps[0], angular_mdps[1], angular_mdps[2]);
 
    }
     return angular_8bit;
@@ -601,8 +598,8 @@ int init_SPI_IMU(void) {
 
 int IMU_Configure(void) {
 
-    int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE);      // Turn on the accelerometer by setting ODR_XL and FS_XL
-    int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE);         // Turn on the gyroscope by setting ODR_G and FS_G
+    int32_t new_data_XL = platform_write(masterSpi, LSM6DSOX_CTRL1_XL, CTRL1_XL_VALUE_104Hz_4g);      // Turn on the accelerometer by setting ODR_XL and FS_XL
+    int32_t new_data_G = platform_write(masterSpi, LSM6DSOX_CTRL2_G, CTRL2_G_VALUE_52Hz_1000);         // Turn on the gyroscope by setting ODR_G and FS_G
     int32_t WakeUpDur = platform_write(masterSpi, LSM6DSOX_WAKE_UP_DUR,  WAKE_UP_DUR);       // Set duration for inactivity detection
                                                                                                 // Select activity/inactivity threshold resolution and duration
     int32_t WakeUpTHS = platform_write(masterSpi, LSM6DSOX_WAKE_UP_THS, WAKE_UP_THS);        // Set activity/inactivity threshold
@@ -721,7 +718,7 @@ void *masterThread(void *arg0)
     PIN_Handle      INT2PinHandle;
     PIN_State       INT2PinState;
     uint32_t        currentOutputVal;
-  //  uint32_t        standbyDuration = 3;
+
 
 
     /* Allocate LED pins */
@@ -812,9 +809,7 @@ void *masterThread(void *arg0)
 
 // if using GPIO_read(PIN_INDEX), TAP_CFG0_VALUE needs to be set as 0x0020
     while (1) { // add PinInterrupt - minimize the number of communications
- //       sleep(7);
-//        printf("value is: %d\n", activity_detection);
-//
+
         while(globalFlag == 1){
             int check_G_aval = Data_update_check(masterSpi, G_BIT);
             if(check_G_aval){
@@ -823,17 +818,8 @@ void *masterThread(void *arg0)
                 RF_transmission(XL_data, G_data);
             }
         }
-        sleep(3);
+        sleep(STANDBY_DURATION_SECOND);
         Voltage_Temp_read();
-////        else{
-////            Voltage_Temp_read();
-//        while(globalFlag==0){
-//            sleep(7);
-//        }
-
-//        }
-
-
 
 
      //   printf("value of activity detection flag is: %d\n", activity_detection);
